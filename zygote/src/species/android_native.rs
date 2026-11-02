@@ -297,12 +297,13 @@ impl Species for App {
         }
 
         // Create a cgroup for the process
-        if sys::getuid() == 0 {
-            cgroup::create(
+        if sys::getuid() == 0
+            && let Err(e) = cgroup::create(
                 spawn_params.uid.expect("No UID specified").try_into().expect("Invalid UID"),
                 sys::getpid(),
             )
-            .expect("Unable to create cgroup for process");
+        {
+            log::warn!("Unable to create cgroup for process, continuing without it: {e:?}");
         }
 
         let policy = if let SpawnPayload::AndroidNative { top_app, .. } = spawn_payload {

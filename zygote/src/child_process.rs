@@ -82,9 +82,16 @@ pub(crate) fn re_initialize(
     // Drop capabilities bounding set if requested
     if let Some(cap_bound) = spawn_params.cap_bound {
         for flag in cap_bound.complement().iter() {
-            let cap = Capability::try_from(flag.bits().trailing_zeros()).unwrap();
-            if cap::cap_within_bound(cap).expect("Failed to check capability bound") {
-                cap::cap_drop_bound(cap).expect("Failed to drop capability bound");
+            let number = flag.bits().trailing_zeros();
+            let cap = Capability::try_from(number).unwrap();
+            match cap::cap_within_bound(cap) {
+                Ok(true) => {
+                    cap::cap_drop_bound(cap).expect("Failed to drop capability bound");
+                }
+                Ok(false) => {}
+                Err(error) => {
+                    warn!("Unable to check capability bound {number}, skipping: {error:?}");
+                }
             }
         }
     }
